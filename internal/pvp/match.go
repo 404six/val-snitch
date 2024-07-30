@@ -100,5 +100,29 @@ func Get_current_game_match(info constants.LogInfo, access_token string, entitle
 	mi.Map_id = match["MapID"].(string)
 	mi.Mode_id = match["ModeID"].(string)
 
+	if players_slice, ok := match["Players"].([]interface{}); ok {
+		for _, elem := range players_slice {
+			if player, ok := elem.(map[string]interface{}); ok {
+
+				player_info := constants.Player_info{
+					Puuid:   player["Subject"].(string),
+					Agent:   player["CharacterID"].(string),
+					Team_id: player["TeamID"].(string),
+					Rank:    Get_player_rank_by_uuid(info, access_token, entitlement, player["Subject"].(string)),
+				}
+
+				// get account level
+				for k, v := range player["PlayerIdentity"].(map[string]interface{}) {
+					if k == "AccountLevel" {
+						player_info.Account_level = v.(float64)
+						break
+					}
+				}
+
+				mi.Players = append(mi.Players, player_info)
+			}
+		}
+	}
+
 	return mi
 }
