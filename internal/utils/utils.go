@@ -1,9 +1,11 @@
 package utils
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"val-snitch/internal/constants"
 )
 
 func Get_log_path() string {
@@ -36,4 +38,15 @@ func Get_string_between(str, start_delim, end_delim string) string {
 	end_index := strings.Index(str[start_index:], end_delim)
 	end_index += start_index
 	return str[start_index:end_index]
+}
+
+func Get_rank_name(index int) string {
+	if index == 0 {
+		return constants.Ranks[0]
+	} else if index == 27 {
+		return constants.Ranks[9]
+	}
+	base_rank_index := (index - 3) / 3
+	level := (index-3)%3 + 1
+	return fmt.Sprintf("%s %v", constants.Ranks[base_rank_index+1], level)
 }
