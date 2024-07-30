@@ -2,8 +2,10 @@ package auth
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"regexp"
@@ -12,6 +14,38 @@ import (
 	"val-snitch/internal/constants"
 	"val-snitch/internal/utils"
 )
+
+func Get_entitlement(access_token string) (string, error) {
+
+	url := "https://entitlements.auth.riotgames.com/api/token/v1"
+
+	body := []byte("{}")
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	if err != nil {
+		return "", fmt.Errorf("error creating request: %v", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+access_token)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("error making request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	resp_body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("error reading response body: %v", err)
+	}
+
+	entitlements_token := utils.Get_string_between(string(resp_body), `"entitlements_token":"`, `"}`)
+
+	return entitlements_token, nil
+}
 
 func ssid_reauth(ssid string) (string, error) {
 	req, err := http.NewRequest("GET", "https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid", nil)
@@ -44,7 +78,7 @@ func ssid_reauth(ssid string) (string, error) {
 	return location, nil
 }
 
-func Auth_from_Client() (string, error) {
+func Auth_from_client() (string, error) {
 	settings_path := utils.Get_settings_path()
 	settings, err := os.ReadFile(settings_path)
 	if err != nil {
