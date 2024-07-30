@@ -2,12 +2,79 @@ package auth
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"regexp"
+	"strings"
+	"time"
 	"val-snitch/internal/constants"
 	"val-snitch/internal/utils"
 )
+
+func ssid_reauth(ssid string) (string, error) {
+	req, err := http.NewRequest("GET", "https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid", nil)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("User-Agent", "")
+	req.Header.Set("Cookie", "ssid="+ssid)
+
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	location := resp.Header.Get("Location")
+	if location == "" {
+		return "", errors.New("no location header in response")
+	}
+	if !strings.HasPrefix(location, "https://playvalorant.com/opt_in") {
+		return "", fmt.Errorf("invalid reauth location: %s", utils.Ellipsis_str(location, 40))
+	}
+	return location, nil
+}
+
+func Auth_from_Client() (string, error) {
+	settings_path := utils.Get_settings_path()
+	settings, err := os.ReadFile(settings_path)
+	if err != nil {
+		return "", fmt.Errorf("failed to read settings file: %v", err)
+	}
+
+	match := constants.Ssid_regex.FindSubmatch(settings)
+	if match == nil {
+		return "", errors.New("couldn't find ssid in RiotGamesPrivateSettings.yaml")
+	}
+
+	ssid := string(match[1])
+	if len(ssid) == 0 || len(strings.Split(ssid, ".")) != 3 {
+		return "", fmt.Errorf("invalid ssid: %s", ssid)
+	}
+
+	// from https://github.com/techchrism/riot-auth-test the ssid reauth might fail but works on a retry
+	var errors []error
+	for i := 0; i < 3; i++ {
+		result, err := ssid_reauth(ssid)
+		if err == nil {
+			access_token := utils.Get_string_between(result, "access_token=", "&scope")
+			return access_token, nil
+		}
+		errors = append(errors, err)
+		time.Sleep(time.Duration(i+1) * time.Second)
+	}
+
+	return "", fmt.Errorf("failed to reauth after %d attempts: %v", len(errors), errors)
+}
 
 func Get_client_info() constants.LogInfo {
 	log_info := constants.LogInfo{}
