@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"val-snitch/internal/auth"
+	"val-snitch/internal/pvp"
+	"val-snitch/internal/utils"
 )
 
 func main() {
@@ -23,5 +25,11 @@ func main() {
 		return
 	}
 
-	fmt.Printf("entitlement_token: %+v\n", entitlement_token)
+	mi := pvp.Get_current_game_match(log_info, access_token, entitlement_token)
+
+	// player_info
+	for _, elem := range mi.Players {
+		fmt.Printf("ppuid: %v | rank: %v | agent: %v | rank_name: %v | account_level: %v | team_id: %v\n", elem.Puuid, elem.Rank, elem.Agent, utils.Get_rank_name(int(elem.Rank)), elem.Account_level, elem.Team_id)
+	}
+
 }
