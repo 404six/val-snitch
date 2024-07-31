@@ -9,8 +9,7 @@ import (
 	"val-snitch/internal/constants"
 )
 
-func get_current_match_id(info constants.LogInfo, access_token string, entitlement string) (string, error) {
-
+func getCurrentMatchID(info constants.LogInfo, accessToken string, entitlement string) (string, error) {
 	url := fmt.Sprintf("https://glz-%s-1.%s.a.pvp.net/core-game/v1/players/%s", info.Region, info.Shard, info.Puuid)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -18,9 +17,9 @@ func get_current_match_id(info constants.LogInfo, access_token string, entitleme
 		return "", fmt.Errorf("failed to create request: %v", err)
 	}
 
-	req.Header.Add("Authorization", "Bearer "+access_token)
+	req.Header.Add("Authorization", "Bearer "+accessToken)
 	req.Header.Add("X-Riot-Entitlements-JWT", entitlement)
-	req.Header.Add("X-Riot-ClientVersion", info.Client_version)
+	req.Header.Add("X-Riot-ClientVersion", info.ClientVersion)
 	req.Header.Add("X-Riot-ClientPlatform", constants.DefaultClientPlatformString)
 	req.Header.Add("User-Agent", "")
 
@@ -57,26 +56,23 @@ func get_current_match_id(info constants.LogInfo, access_token string, entitleme
 	return matchID, nil
 }
 
-func Get_current_game_match(info constants.LogInfo, access_token string, entitlement string) constants.Match_info {
+func GetCurrentGameMatch(info constants.LogInfo, accessToken string, entitlement string) constants.MatchInfo {
+	mi := constants.MatchInfo{}
 
-	mi := constants.Match_info{}
-
-	current_match_id, err := get_current_match_id(info, access_token, entitlement)
+	currentMatchID, err := getCurrentMatchID(info, accessToken, entitlement)
 	if err != nil {
-		fmt.Printf("error 0 - %v", fmt.Errorf("%v", err))
 		return mi
 	}
 
-	url := fmt.Sprintf("https://glz-%s-1.%s.a.pvp.net/core-game/v1/matches/%s", info.Region, info.Shard, current_match_id)
+	url := fmt.Sprintf("https://glz-%s-1.%s.a.pvp.net/core-game/v1/matches/%s", info.Region, info.Shard, currentMatchID)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Printf("error 1 - %v", fmt.Errorf("%v", err))
 		return mi
 	}
-	req.Header.Add("Authorization", "Bearer "+access_token)
+	req.Header.Add("Authorization", "Bearer "+accessToken)
 	req.Header.Add("X-Riot-Entitlements-JWT", entitlement)
-	req.Header.Add("X-Riot-ClientVersion", info.Client_version)
+	req.Header.Add("X-Riot-ClientVersion", info.ClientVersion)
 	req.Header.Add("X-Riot-ClientPlatform", constants.DefaultClientPlatformString)
 	req.Header.Add("User-Agent", "")
 
@@ -96,30 +92,29 @@ func Get_current_game_match(info constants.LogInfo, access_token string, entitle
 		return mi
 	}
 
-	mi.Id = match["MatchID"].(string)
-	mi.Map_id = match["MapID"].(string)
-	mi.Mode_id = match["ModeID"].(string)
+	mi.ID = match["MatchID"].(string)
+	mi.MapID = match["MapID"].(string)
+	mi.ModeID = match["ModeID"].(string)
 
-	if players_slice, ok := match["Players"].([]interface{}); ok {
-		for _, elem := range players_slice {
+	if playersSlice, ok := match["Players"].([]interface{}); ok {
+		for _, elem := range playersSlice {
 			if player, ok := elem.(map[string]interface{}); ok {
-
-				player_info := constants.Player_info{
-					Puuid:   player["Subject"].(string),
-					Agent:   player["CharacterID"].(string),
-					Team_id: player["TeamID"].(string),
-					Rank:    Get_player_rank_by_uuid(info, access_token, entitlement, player["Subject"].(string)),
+				playerInfo := constants.PlayerInfo{
+					Puuid:  player["Subject"].(string),
+					Agent:  player["CharacterID"].(string),
+					TeamID: player["TeamID"].(string),
+					Rank:   GetPlayerRankByUUID(info, accessToken, entitlement, player["Subject"].(string)),
 				}
 
 				// get account level
 				for k, v := range player["PlayerIdentity"].(map[string]interface{}) {
 					if k == "AccountLevel" {
-						player_info.Account_level = v.(float64)
+						playerInfo.AccountLevel = v.(float64)
 						break
 					}
 				}
 
-				mi.Players = append(mi.Players, player_info)
+				mi.Players = append(mi.Players, playerInfo)
 			}
 		}
 	}

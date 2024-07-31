@@ -1,10 +1,10 @@
 package constants
 
-type Match_info struct {
-	Id      string        `json:"id"`
-	Map_id  string        `json:"map_id"`
-	Mode_id string        `json:"mode_id"`
-	Players []Player_info `json:"players"`
+type MatchInfo struct {
+	ID      string       `json:"id"`
+	MapID   string       `json:"map_id"`
+	ModeID  string       `json:"mode_id"`
+	Players []PlayerInfo `json:"players"`
 }
 
 var Ranks = []string{

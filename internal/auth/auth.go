@@ -15,10 +15,8 @@ import (
 	"val-snitch/internal/utils"
 )
 
-func Get_entitlement(access_token string) (string, error) {
-
+func GetEntitlement(accessToken string) (string, error) {
 	url := "https://entitlements.auth.riotgames.com/api/token/v1"
-
 	body := []byte("{}")
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
@@ -26,7 +24,7 @@ func Get_entitlement(access_token string) (string, error) {
 		return "", fmt.Errorf("error creating request: %v", err)
 	}
 
-	req.Header.Set("Authorization", "Bearer "+access_token)
+	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "")
 
@@ -37,17 +35,17 @@ func Get_entitlement(access_token string) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	resp_body, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("error reading response body: %v", err)
 	}
 
-	entitlements_token := utils.Get_string_between(string(resp_body), `"entitlements_token":"`, `"}`)
+	entitlementsToken := utils.GetStringBetween(string(respBody), `"entitlements_token":"`, `"}`)
 
-	return entitlements_token, nil
+	return entitlementsToken, nil
 }
 
-func ssid_reauth(ssid string) (string, error) {
+func ssidReauth(ssid string) (string, error) {
 	req, err := http.NewRequest("GET", "https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid", nil)
 	if err != nil {
 		return "", err
@@ -73,19 +71,19 @@ func ssid_reauth(ssid string) (string, error) {
 		return "", errors.New("no location header in response")
 	}
 	if !strings.HasPrefix(location, "https://playvalorant.com/opt_in") {
-		return "", fmt.Errorf("invalid reauth location: %s", utils.Ellipsis_str(location, 40))
+		return "", fmt.Errorf("invalid reauth location: %s", utils.EllipsisStr(location, 40))
 	}
 	return location, nil
 }
 
-func Auth_from_client() (string, error) {
-	settings_path := utils.Get_settings_path()
-	settings, err := os.ReadFile(settings_path)
+func AuthFromClient() (string, error) {
+	settingsPath := utils.GetSettingsPath()
+	settings, err := os.ReadFile(settingsPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read settings file: %v", err)
 	}
 
-	match := constants.Ssid_regex.FindSubmatch(settings)
+	match := constants.SsidRegex.FindSubmatch(settings)
 	if match == nil {
 		return "", errors.New("couldn't find ssid in RiotGamesPrivateSettings.yaml")
 	}
@@ -95,13 +93,13 @@ func Auth_from_client() (string, error) {
 		return "", fmt.Errorf("invalid ssid: %s", ssid)
 	}
 
-	// from https://github.com/techchrism/riot-auth-test the ssid reauth might fail but works on a retry
+	// From https://github.com/techchrism/riot-auth-test; the ssid reauth might fail but works on a retry
 	var errors []error
 	for i := 0; i < 3; i++ {
-		result, err := ssid_reauth(ssid)
+		result, err := ssidReauth(ssid)
 		if err == nil {
-			access_token := utils.Get_string_between(result, "access_token=", "&scope")
-			return access_token, nil
+			accessToken := utils.GetStringBetween(result, "access_token=", "&scope")
+			return accessToken, nil
 		}
 		errors = append(errors, err)
 		time.Sleep(time.Duration(i+1) * time.Second)
@@ -110,14 +108,14 @@ func Auth_from_client() (string, error) {
 	return "", fmt.Errorf("failed to reauth after %d attempts: %v", len(errors), errors)
 }
 
-func Get_client_info() constants.LogInfo {
-	log_info := constants.LogInfo{}
+func GetClientInfo() constants.LogInfo {
+	logInfo := constants.LogInfo{}
 
-	file_path := utils.Get_log_path()
-	file, err := os.Open(file_path)
+	filePath := utils.GetLogPath()
+	file, err := os.Open(filePath)
 	if err != nil {
 		fmt.Println("Error opening file:", err)
-		return log_info
+		return logInfo
 	}
 	defer file.Close()
 
@@ -125,19 +123,19 @@ func Get_client_info() constants.LogInfo {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if match := constants.Puuid_regex.FindStringSubmatch(line); match != nil {
-			log_info.Puuid = match[1]
+		if match := constants.PuuidRegex.FindStringSubmatch(line); match != nil {
+			logInfo.Puuid = match[1]
 		}
 
-		if match := constants.Region_shard_regex.FindStringSubmatch(line); match != nil {
-			log_info.Region = match[1]
-			log_info.Shard = match[2]
+		if match := constants.RegionShardRegex.FindStringSubmatch(line); match != nil {
+			logInfo.Region = match[1]
+			logInfo.Shard = match[2]
 		}
 
-		if match := constants.Client_version_regex.FindStringSubmatch(line); match != nil {
+		if match := constants.ClientVersionRegex.FindStringSubmatch(line); match != nil {
 			re := regexp.MustCompile(`^(release-\d+\.\d+-)`)
-			log_info.Client_version = re.ReplaceAllString(match[1], "${1}shipping-")
+			logInfo.ClientVersion = re.ReplaceAllString(match[1], "${1}shipping-")
 		}
 	}
-	return log_info
+	return logInfo
 }

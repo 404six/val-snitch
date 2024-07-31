@@ -8,45 +8,45 @@ import (
 	"val-snitch/internal/constants"
 )
 
-func Get_log_path() string {
-	local_appdata := os.Getenv("LOCALAPPDATA")
+func GetLogPath() string {
+	localAppData := os.Getenv("LOCALAPPDATA")
 
-	file_path := filepath.Join(local_appdata, "VALORANT", "Saved", "Logs", "ShooterGame.log")
+	filePath := filepath.Join(localAppData, "VALORANT", "Saved", "Logs", "ShooterGame.log")
 
-	return file_path
+	return filePath
 }
 
-func Get_settings_path() string {
-	local_appdata := os.Getenv("LOCALAPPDATA")
+func GetSettingsPath() string {
+	localAppData := os.Getenv("LOCALAPPDATA")
 
-	file_path := filepath.Join(local_appdata, "Riot Games", "Riot Client", "Data", "RiotGamesPrivateSettings.yaml")
+	filePath := filepath.Join(localAppData, "Riot Games", "Riot Client", "Data", "RiotGamesPrivateSettings.yaml")
 
-	return file_path
+	return filePath
 }
 
-func Ellipsis_str(str string, length int) string {
+func EllipsisStr(str string, length int) string {
 	if len(str) > length {
 		return str[:length-3] + "..."
 	}
 	return str
 }
 
-func Get_string_between(str, start_delim, end_delim string) string {
-	start_index := strings.Index(str, start_delim)
-	start_index += len(start_delim)
+func GetStringBetween(str, startDelim, endDelim string) string {
+	startIndex := strings.Index(str, startDelim)
+	startIndex += len(startDelim)
 
-	end_index := strings.Index(str[start_index:], end_delim)
-	end_index += start_index
-	return str[start_index:end_index]
+	endIndex := strings.Index(str[startIndex:], endDelim)
+	endIndex += startIndex
+	return str[startIndex:endIndex]
 }
 
-func Get_rank_name(index int) string {
+func GetRankName(index int) string {
 	if index == 0 {
 		return constants.Ranks[0]
 	} else if index == 27 {
 		return constants.Ranks[9]
 	}
-	base_rank_index := (index - 3) / 3
+	baseRankIndex := (index - 3) / 3
 	level := (index-3)%3 + 1
-	return fmt.Sprintf("%s %v", constants.Ranks[base_rank_index+1], level)
+	return fmt.Sprintf("%s %v", constants.Ranks[baseRankIndex+1], level)
 }

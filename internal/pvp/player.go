@@ -8,8 +8,7 @@ import (
 	"val-snitch/internal/constants"
 )
 
-func Get_player_rank_by_uuid(info constants.LogInfo, accessToken string, entitlement string, puuid string) float64 {
-
+func GetPlayerRankByUUID(info constants.LogInfo, accessToken string, entitlement string, puuid string) float64 {
 	url := fmt.Sprintf("https://pd.%s.a.pvp.net/mmr/v1/players/%s", info.Shard, puuid)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -18,7 +17,7 @@ func Get_player_rank_by_uuid(info constants.LogInfo, accessToken string, entitle
 	}
 	req.Header.Add("Authorization", "Bearer "+accessToken)
 	req.Header.Add("X-Riot-Entitlements-JWT", entitlement)
-	req.Header.Add("X-Riot-ClientVersion", info.Client_version)
+	req.Header.Add("X-Riot-ClientVersion", info.ClientVersion)
 	req.Header.Add("X-Riot-ClientPlatform", constants.DefaultClientPlatformString)
 	req.Header.Add("User-Agent", "")
 
@@ -33,19 +32,19 @@ func Get_player_rank_by_uuid(info constants.LogInfo, accessToken string, entitle
 		return -1
 	}
 
-	season_id := get_current_season_id(info, accessToken, entitlement)
+	seasonID := getCurrentSeasonID(info, accessToken, entitlement)
 
-	var queue_skills map[string]interface{}
-	if err = json.Unmarshal(body, &queue_skills); err != nil {
+	var queueSkills map[string]interface{}
+	if err = json.Unmarshal(body, &queueSkills); err != nil {
 		return -1
 	}
 
-	if qs, ok := queue_skills["QueueSkills"].(map[string]interface{}); ok {
+	if qs, ok := queueSkills["QueueSkills"].(map[string]interface{}); ok {
 		if competitive, ok := qs["competitive"].(map[string]interface{}); ok {
-			if season_slice, ok := competitive["SeasonalInfoBySeasonID"].(map[string]interface{}); ok {
-				for _, elem := range season_slice {
+			if seasonalInfo, ok := competitive["SeasonalInfoBySeasonID"].(map[string]interface{}); ok {
+				for _, elem := range seasonalInfo {
 					if season, ok := elem.(map[string]interface{}); ok {
-						if season["SeasonID"] == season_id {
+						if season["SeasonID"] == seasonID {
 							return season["Rank"].(float64)
 						}
 					}
