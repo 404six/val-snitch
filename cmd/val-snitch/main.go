@@ -27,7 +27,7 @@ func main() {
 
 	// playerInfo
 	for _, elem := range mi.Players {
-		fmt.Printf("puuid: %v | rank: %v | agent: %v | rankName: %v | accountLevel: %v | teamID: %v\n",
-			elem.Puuid, elem.Rank, elem.Agent, utils.GetRankName(int(elem.Rank)), elem.AccountLevel, elem.TeamID)
+		fmt.Printf("puuid: %v | agent: %v | rankName: %v | accountLevel: %v | teamID: %v\n",
+			elem.Puuid, utils.GetAgentNameByID(elem.Agent), utils.GetRankName(int(elem.Rank)), elem.AccountLevel, elem.TeamID)
 	}
 }

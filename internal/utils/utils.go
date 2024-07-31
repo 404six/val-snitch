@@ -41,7 +41,7 @@ func GetStringBetween(str, startDelim, endDelim string) string {
 }
 
 func GetRankName(index int) string {
-	if index == 0 {
+	if index == 0 || index == 999 {
 		return constants.Ranks[0]
 	} else if index == 27 {
 		return constants.Ranks[9]
@@ -49,4 +49,9 @@ func GetRankName(index int) string {
 	baseRankIndex := (index - 3) / 3
 	level := (index-3)%3 + 1
 	return fmt.Sprintf("%s %v", constants.Ranks[baseRankIndex+1], level)
+}
+
+func GetAgentNameByID(id string) string {
+	name := constants.AgentsMap[id]
+	return name
 }
